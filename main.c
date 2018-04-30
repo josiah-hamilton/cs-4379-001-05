@@ -33,18 +33,32 @@ int main(int argc, char **argv) {
 
     bound(&loi,&loj,n,rank,size);
     bound(&hii,&hij,n,rank+1,size);
-    for (i=loi; i<hii; i++) {
-        for (j=loj; j<i; j++) {
+    if (rank != size-1) {
+        for (i=loi; i<hii; i++) {
+            for (j=loj; j<i; j++) {
+                diff=x[i]-x[j];
+                tmp = 1.0/(diff*diff*diff);
+                Ftmp[i] += tmp;
+                Ftmp[j] -= tmp;
+            }
+        }
+        for (j=loj; j<hij; j++) {
             diff=x[i]-x[j];
             tmp = 1.0/(diff*diff*diff);
             Ftmp[i] += tmp;
             Ftmp[j] -= tmp;
-
+        }
+    } else { // cover any final indeces that may have slipped through bounds calc
+        for (i=loi; i<n; i++) {
+            for (j=loj; j<i; j++) {
+                diff=x[i]-x[j];
+                tmp = 1.0/(diff*diff*diff);
+                Ftmp[i] += tmp;
+                Ftmp[j] -= tmp;
+            }
         }
     }
-    for (j=loj; j<hij; j++) {
-        
-    }
+
 
     MPI_Reduce(Ftmp,F,n,MPI_DOUBLE,MPI_SUM,root,MPI_COMM_WORLD);
 

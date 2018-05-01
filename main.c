@@ -7,29 +7,40 @@
 #ifndef NODES
     #define NODES 8
 #endif
+#define RANDMAX 20.0
+#define FMAX 20.0
+#define FMIN 0.5
 
 void bound(int*,int*,int,int,int);
+void distgen(double *, int, time_t);
 
 int main(int argc, char **argv) {
 
     int n = NODES;
     int i,j,hii, hij, loi, loj;
     int rank,root=0,size;
-    int *x,diff, tmp; 
+    double *x,diff, tmp; 
     double *F, *Ftmp;
+
+    x = (double *) calloc(n, sizeof(int));
+    F = (double *) calloc(n, sizeof(double));
+    Ftmp = (double *) calloc(n, sizeof(double));
+
+    distgen(x,n,time(NULL));
+    for (i=0; i<n; i++) { 
+        F[i] = 0.0; 
+        Ftmp[i] = 0.0; 
+    }
+#ifdef DEBUG
+    fprintf(stderr,"Generated particles\n");
+#endif
+
     MPI_Status status;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD,&size);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-    x = (int *) calloc(n, sizeof(int));
-    F = (double *) calloc(n, sizeof(double));
-    Ftmp = (double *) calloc(n, sizeof(double));
-    for (i=0; i<n; i++) { 
-        F[i] = 0.0; 
-        Ftmp[i] = 0.0; 
-    }
 
     bound(&loi,&loj,n,rank,size);
     bound(&hii,&hij,n,rank+1,size);
@@ -58,9 +69,16 @@ int main(int argc, char **argv) {
             }
         }
     }
+    
+#ifdef DEBUG
+    fprintf(stderr,"%d: Calculated forces\n",rank);
+#endif
 
 
     MPI_Reduce(Ftmp,F,n,MPI_DOUBLE,MPI_SUM,root,MPI_COMM_WORLD);
+#ifdef DEBUG
+    fprintf(stderr,"%d: Sent to root\n",rank);
+#endif
 
     MPI_Finalize();
     return 0;
@@ -84,4 +102,12 @@ void bound (int *i, int *j, int n, int rank, int size) {
     // break the bounds into i and j iterator components
     *i = (int)ceil(bound);
     *j = (int)((bound - floor(bound)) * (ceil(bound)));
+}
+
+void distgen(double *x, int n, time_t seed) {
+    srand(seed);
+    int i;
+    for (i=0; i<n; i++) {
+        x[n] = (double) (FMIN + (rand() / RANDMAX) * (FMAX - FMIN));
+    }
 }
